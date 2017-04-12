@@ -1,6 +1,7 @@
 using namespace std;
 
 #include <string>
+#include <vector>
 
 class Professor{
   string name;

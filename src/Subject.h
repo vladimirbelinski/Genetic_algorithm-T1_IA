@@ -2,6 +2,9 @@ using namespace std;
 
 #include <string>
 
+#include "Professor.h"
+#include "Group.h"
+
 class Subject{
   int id, np;  
   string code;
