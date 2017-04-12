@@ -2,14 +2,16 @@
 
 using namespace std;
 
-#include <iosteam>
+#include <iostream>
 #include <vector>
 #include <string>
 #include <map>
 
 #include "Professor.h"
+#include "Subject.h"
 #include "Group.h"
 
+vector<Subject> subjects;
 map<string,Group> groups;
 map<string,Professor> professors;
 
@@ -50,7 +52,8 @@ void read_subjects() {
   for(int i = 0; i < subject_quantity; i++){    
     int period_quantity;
     string subject_code, group_code, professor_name;
-    cin >> subject_code >> period_quantity >> group_code >> professor_name;
+    cin >> subject_code >> period_quantity >> group_code >> professor_name;    
+    subjects.push_back(Subject(i,period_quantity,subject_code,groups[group_code],professors[professor_name]));
   }
 }
 

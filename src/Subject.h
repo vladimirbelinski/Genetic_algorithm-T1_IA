@@ -1,3 +1,5 @@
+#pragma once
+
 using namespace std;
 
 #include <string>
@@ -11,5 +13,6 @@ class Subject{
   Professor professor;
   int id, period_quantity;  
 public:  
-  Subject(int,int,Group,Professor);
+  Subject();
+  Subject(int,int,string,Group,Professor);
 };
