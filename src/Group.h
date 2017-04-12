@@ -2,10 +2,10 @@ using namespace std;
 
 #include <vector>
 
-class Course{
+class Group{
   int room;
   vector<int> schedule;
 public:
-  Course(int);
+  Group(int);
   void add_schedule(int);
 };
