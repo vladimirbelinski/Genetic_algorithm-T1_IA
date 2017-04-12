@@ -5,11 +5,11 @@ using namespace std;
 #include "Professor.h"
 #include "Group.h"
 
-class Subject{
-  int id, np;  
+class Subject{  
   string code;
   Group group;
   Professor professor;
+  int id, period_quantity;  
 public:  
   Subject(int,int,Group,Professor);
 };
