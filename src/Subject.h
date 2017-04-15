@@ -4,15 +4,11 @@ using namespace std;
 
 #include <string>
 
-#include "Professor.h"
-#include "Group.h"
-
-class Subject{  
+class Subject{
+public:
   string code;
-  Group group;
-  Professor professor;
-  int id, period_quantity;  
-public:  
+  string course;
+  int id, period_quantity;
   Subject();
-  Subject(int,int,string,Group,Professor);
+  Subject(int,int,string,string);
 };
