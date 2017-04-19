@@ -14,6 +14,7 @@ using namespace std;
 #include <set>
 
 #include "Professor.h"
+#include "Schedule.h"
 #include "Subject.h"
 
 const int POPULATION_SIZE = 28;
@@ -78,16 +79,32 @@ struct ii_cmp {
 vector< vector<int> > permutations;
 void generate_people_permutation(){
   for(int i = 0; i < (int)professors.size(); i++){    
+    /*
+      A lista check contém todos os professores ainda não sorteados.
+    */
     list<int> check;
+    /*
+      Adcionar à lista de não sorteados todos os professores diferentes de i.
+    */
     for(int j = 0; j < (int)professors.size(); j++)
       if(j != i) check.push_back(j);
+      
+    /*
+      O vector perm representa uma permutação de professores.      
+    */
     vector<int> perm;
     perm.push_back(i);    
     while(!check.empty()){
+      /*
+        Sorteio do próximo professor.
+      */
       knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
       uniform_int_distribution<int> distribution(0,((int)check.size())-1);  
       auto dice = bind(distribution, generator);
       auto it = check.begin();
+      /*
+        Retirar professor da lista de não sorteados.
+      */
       advance(it,dice());
       perm.push_back(*it);
       check.erase(it);
@@ -96,30 +113,26 @@ void generate_people_permutation(){
   }
 }
 
+vector< vector<Schedule> > population;
 void generate_population(int group_size){    
-  for(int i = 0,g; i < (int)permutations.size(); i++,g = 0){
-    cout << "Current permutation:" << endl;
-    for (auto& index: permutations[i])
-      cout << index << ";";
-    cout << endl;
+  for(int i = 0,g; i < (int)permutations.size(); i++,g = 0){    
     do{
       g++;      
-      cout << "New person" << endl;
       set<ii,ii_cmp> is_alocated_room_schedule;
+      vector<Schedule> person;
       for(int j = 0; j < (int)permutations[i].size(); j++){
-        Professor p = professors[professor_index[permutations[i][j]]];        
-        cout << p.name << endl;
+        Professor p = professors[professor_index[permutations[i][j]]];                
         for(auto& subjects : p.subjects){//turnos e semestres para um professor.
           for(auto& subject : subjects.second){//disciplinas para turnos e semestres.
             int periods = 0;
             for(auto& c : courses[subject.course]){//turnos e semestres.
               for(auto& class_room_schedule : c.second){//salas de cada curso.
-
                 ii schedule = ii(c.first,class_room_schedule);
                 if(is_alocated_room_schedule.find(schedule) == is_alocated_room_schedule.end()){
                   periods++;
-                  cout << p.name << " " << subject.code << " " << c.first << " " << class_room_schedule << endl;
+                  cout << p.name << " " << subject.code << " " << subject.course << " " << c.first << " " << class_room_schedule << endl;
                   is_alocated_room_schedule.insert(schedule);
+                  person.push_back(Schedule(subject,c.first,class_room_schedule,p));
                 }
                 if(periods == subject.period_quantity) break;
               }
@@ -128,10 +141,9 @@ void generate_population(int group_size){
             if(periods == subject.period_quantity) break;
           }
         }
-        cout << endl;
       }
-    }while(next_permutation(permutations[i].begin(),permutations[i].end()) && g < group_size);
-    cout << endl;
+      population.push_back(person);
+    }while(next_permutation(permutations[i].begin(),permutations[i].end()) && g < group_size);    
   }
 }
 
