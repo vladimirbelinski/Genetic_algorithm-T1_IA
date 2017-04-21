@@ -1,10 +1,8 @@
-#include "Subject.h"
+#include "Schedule.h"
 
-Subject::Subject(){}
+Schedule::Schedule(){}
 
-Subject::Subject(int id,int period_quantity,string code,string course){
-    this->id = id;
-    this->code = code;
-    this->course = course;
-    this->period_quantity = period_quantity;
+Schedule::Schedule(Class _class,int _room,int _schedule){
+  this->_class = _class;
+  this->room = _room, this->schedule = _schedule;
 }

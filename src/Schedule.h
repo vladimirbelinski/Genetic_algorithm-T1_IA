@@ -1,13 +1,11 @@
 #pragma once
 
-#include "Professor.h"
-#include "Subject.h"
+#include "Class.h"
 
 class Schedule{
 public:
-  Subject subject;
+  Class _class;
   int room,schedule;
-  Professor professor;  
   Schedule();
-  Schedule(Subject,int,int,Professor);
+  Schedule(Class,int,int);
 };

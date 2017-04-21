@@ -1,0 +1,18 @@
+4
+Padilha 6 08 09 18 19 28 29
+Guilherme 6 00 01 10 11 21 22
+Raquel    4 26 27 28 29
+Jacson    8 00 01 02 03 06 07 08 09
+3
+V1 101 10 10 11 12 13 14 15 16 17 18 19
+M3 102  8 00 01 04 05 06 07 08 09
+M5 103 12 02 03 04 05 06 07 08 09 10 11 16 17
+8
+CD    1 V1 Padilha
+CD    1 V1 Guilherme
+Prg1  1 M3 Raquel
+OC    2 M3 Jacson
+IA    2 M3 Padilha
+SO    2 M5 Guilherme
+LFA   2 M5 Raquel
+TCC1  2 M5 Jacson

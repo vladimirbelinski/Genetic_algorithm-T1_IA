@@ -2,8 +2,7 @@
 
 Schedule::Schedule(){}
 
-Schedule::Schedule(Subject _subject,int _room,int _schedule,Professor _professor){
-  this->subject = _subject;
-  this->professor = _professor;
-  this->room = _room, this->schedule = _schedule;  
+Schedule::Schedule(Class _class,int _room,int _schedule){
+  this->_class = _class;
+  this->room = _room, this->schedule = _schedule;
 }
