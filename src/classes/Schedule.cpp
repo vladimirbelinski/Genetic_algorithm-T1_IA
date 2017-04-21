@@ -1,4 +1,4 @@
-#include "Schedule.h"
+#include "headers/Schedule.h"
 
 Schedule::Schedule(){}
 

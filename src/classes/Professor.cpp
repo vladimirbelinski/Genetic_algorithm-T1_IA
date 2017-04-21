@@ -1,4 +1,4 @@
-#include "Professor.h"
+#include "headers/Professor.h"
 
 Professor::Professor(){}
 

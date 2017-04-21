@@ -4,8 +4,9 @@
 
 class Schedule{
 public:
+  Room room;
+  int number;
   Class _class;
-  int room,schedule;
   Schedule();
-  Schedule(Class,int,int);
+  Schedule(Room,int,Class);
 };
