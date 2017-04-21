@@ -1,0 +1,11 @@
+2
+Padilha 6 08 09 18 19 28 29
+Guilherme 6 00 01 10 11 21 22
+2
+V1 101 10 10 11 12 13 14 15 16 17 18 19
+V2 102 10 10 11 12 13 14 15 16 17 18 19
+4
+CD    1 V1 Padilha
+CD    1 V1 Guilherme
+IA    1 V2 Padilha
+SO    1 V2 Guilherme
