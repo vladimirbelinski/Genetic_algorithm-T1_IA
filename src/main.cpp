@@ -13,7 +13,7 @@
 
 #include "ia.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 using namespace std;
 
@@ -52,18 +52,6 @@ bool room_comp(room_t &a,room_t &b){
   if(a.number != b.number) return a.number < b.number;
   return a.course.compare(b.course) < 0;
 }
-
-// struct class_comp{
-//   bool operator()(Class a,Class b){
-//     int diff = a.professor.name.compare(b.professor.name);
-//     if(diff) return diff < 0;
-//     diff = a.subject.course.compare(b.subject.course);
-//     if(diff) return diff < 0;
-//     diff = a.subject.code.compare(b.subject.code);
-//     if(diff) return diff < 0;
-//     return a.number < b.number;
-//   }
-// };
 
 void read_professors(){
   int professor_quantity;
@@ -118,7 +106,7 @@ void read_subjects() {
     professor_courses[professor].push_back(course);
   }
 }
-
+  
 vector< vector<int> > permutations;
 void generate_people_permutation(){
   for(int i = 0; i < (int)professors.size(); i++){
@@ -206,76 +194,98 @@ void generate_population(int group_size){
     }while(next_permutation(permutations[i].begin(),permutations[i].end()) && group < group_size);
   }
 }
+
+struct schedule_t_comp{
+  bool operator()(schedule_t a,schedule_t b){
+    int diff = a.professor.compare(b.professor);
+    if(diff) return diff < 0;
+    diff = a.subject.course.compare(b.subject.course);
+    if(diff) return diff < 0;
+    diff = a.subject.code.compare(b.subject.code);
+    if(diff) return diff < 0;
+    return a.room.number < b.room.number;
+  }
+};
 /*
 chave first: Sala
 chave second; Horário.
 Valor: professor, matéria e sala.
 */
-// set<Class,class_comp> vis;
-// map< ii, Class > match;
-// map<Class,_4i,class_comp> embryo;
-// int Aug(Class v){
-//   if(vis.find(v) != vis.end()) return 0;
-//   vis.insert(v);
-//   knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
-//   uniform_int_distribution<int> distribution(0,1);
-//   auto dice = bind(distribution, generator);
-//   if(dice()){
-//     if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
-//       match[embryo[v].first] = v;
-//       return 1;
-//     }
-//     if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
-//       match[embryo[v].second] = v;
-//       return 1;
-//     }
-//   }
-//   else{
-//     if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
-//       match[embryo[v].second] = v;
-//       return 1;
-//     }
-//     if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
-//       match[embryo[v].first] = v;
-//       return 1;
-//     }
-//   }
-//   return 0;
-// }
-//
-// bool bipartite_matching(){
-//   int m = 0;
-//   for(auto& e : embryo){
-//     vis.clear();
-//     m += Aug(e.first);
-//   }
-//   return m == (int)embryo.size();
-// }
-/*
-vector<Schedule> cross(vector<Schedule> & person1, vector<Schedule> & person2){
+set<schedule_t,schedule_t_comp> vis;
+map< ii, schedule_t > match;
+map<schedule_t,_4i,schedule_t_comp> embryo;
+
+int Aug(schedule_t v){
+  if(vis.find(v) != vis.end()) return 0;
+  vis.insert(v);
+  knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
+  uniform_int_distribution<int> distribution(0,1);
+  auto dice = bind(distribution, generator);
+  if(dice()){
+    if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+      match[embryo[v].first] = v;
+      return 1;
+    }
+    if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+      match[embryo[v].second] = v;
+      return 1;
+    }
+  }
+  else{
+    if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+      match[embryo[v].second] = v;
+      return 1;
+    }
+    if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+      match[embryo[v].first] = v;
+      return 1;
+    }
+  }
+  return 0;
+}
+
+bool bipartite_matching(){
+  int m = 0;
+  for(auto& e : embryo){
+    vis.clear();
+    m += Aug(e.first);
+  }
+  return m == (int)embryo.size();
+}
+
+vector<schedule_t> cross(vector<schedule_t> & person1, vector<schedule_t> & person2){
   embryo.clear();
 
-  for(auto& p : person1) embryo[p._class].first = ii(p.room,p.schedule);
-  for(auto& p : person2) embryo[p._class].second = ii(p.room,p.schedule);
+  map<string,set<int> > check_repeated_schedule;
+  for(auto p : person1) {
+    if(check_repeated_schedule.find(p.professor) == check_repeated_schedule.end()) 
+      check_repeated_schedule[p.professor] = set<int>();    
+    if(check_repeated_schedule[p.professor].find(p.schedule) == check_repeated_schedule[p.professor].end()){  
+      embryo[p].first = ii(p.room.number,p.schedule);    
+      check_repeated_schedule[p.professor].insert(p.schedule);
+    }
+  }
+  for(auto p : person2) {
+    if(check_repeated_schedule.find(p.professor) == check_repeated_schedule.end()) 
+      check_repeated_schedule[p.professor] = set<int>();    
+    if(check_repeated_schedule[p.professor].find(p.schedule) == check_repeated_schedule[p.professor].end()){  
+      embryo[p].first = ii(p.room.number,p.schedule);    
+      check_repeated_schedule[p.professor].insert(p.schedule);
+    }
+  }
 
   printf("Embryo\n");
   for(auto& e : embryo){
-    cout << e.first.professor.name << " " << e.first.subject.code << " " << e.first.subject.course << " " << e.first.number << " (" << e.second.first.first << ", " << e.second.first.second << "), " << " (" << e.second.second.first << ", " << e.second.second.second << ") " << endl;
-  }
+    cout << e.first.professor << " " << e.first.subject.code << " " << e.first.subject.course << " " << e.first.room.number << " (" << e.second.first.first << ", " << e.second.first.second << "), " << " (" << e.second.second.first << ", " << e.second.second.second << ") " << endl;
+  }  
 
   bipartite_matching();
-  vector<Schedule> schedule;
+  vector<schedule_t> schedule;
   for(auto& m : match){
-    schedule.push_back(Schedule(m.second,m.first.first,m.first.second));
+    schedule.push_back(m.second);
   }
   return schedule;
-}*/
-
-// void print_schedule(vector<Schedule>& person){
-//   for(auto& schedule : person){
-//     cout << schedule._class.professor.name << " " << schedule._class.subject.code << " " << schedule._class.subject.course << " " << schedule.room << " " << schedule.schedule << endl;
-//   }
-// }
+}
 
 void print_room(room_t room){
   cout << room.course << " " << room.number << " ";
@@ -352,15 +362,12 @@ int main(void){
   #ifdef DEBUG
     print_population();
   #endif
-
-  /*
-  generate_population(POPULATION_SIZE / (int)professors.size());
-  vector<Schedule> person = cross(population.front(),population.back());
+  vector<schedule_t> person = cross(population.front(),population.back());    
   printf("\nPerson 1, size:%d\n",(int)population.front().size());
-  print_schedule(population.front());
+  print_person(population.front());
   printf("\nPerson 2, size:%d\n",(int)population.back().size());
-  print_schedule(population.back());
+  print_person(population.back());
   printf("\nChild, size:%d\n",(int)person.size());
-  print_schedule(person);*/
+  print_person(person);
   return 0;
 }
