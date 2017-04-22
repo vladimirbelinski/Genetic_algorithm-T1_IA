@@ -221,22 +221,26 @@ int Aug(schedule_t v){
   knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
   uniform_int_distribution<int> distribution(0,1);
   auto dice = bind(distribution, generator);
-  if(dice()){
-    if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+  if(dice()){    
+    if(embryo[v].first != ii(-1,-1) && 
+        match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
       match[embryo[v].first] = v;
       return 1;
     }
-    if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+    if(embryo[v].second != ii(-1,-1) && 
+        match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
       match[embryo[v].second] = v;
       return 1;
     }
   }
   else{
-    if(match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+    if(embryo[v].second != ii(-1,-1) && 
+        match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
       match[embryo[v].second] = v;
       return 1;
     }
-    if(match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+    if(embryo[v].first != ii(-1,-1) && 
+        match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
       match[embryo[v].first] = v;
       return 1;
     }
@@ -264,6 +268,7 @@ vector<schedule_t> cross(vector<schedule_t> & person1, vector<schedule_t> & pers
       embryo[p].first = ii(p.room.number,p.schedule);    
       check_repeated_schedule[p.professor].insert(p.schedule);
     }
+    else embryo[p].first = ii(-1,-1);
   }
   for(auto p : person2) {
     if(check_repeated_schedule.find(p.professor) == check_repeated_schedule.end()) 
@@ -272,13 +277,8 @@ vector<schedule_t> cross(vector<schedule_t> & person1, vector<schedule_t> & pers
       embryo[p].first = ii(p.room.number,p.schedule);    
       check_repeated_schedule[p.professor].insert(p.schedule);
     }
+    else embryo[p].first = ii(-1,-1);
   }
-
-  printf("Embryo\n");
-  for(auto& e : embryo){
-    cout << e.first.professor << " " << e.first.subject.code << " " << e.first.subject.course << " " << e.first.room.number << " (" << e.second.first.first << ", " << e.second.first.second << "), " << " (" << e.second.second.first << ", " << e.second.second.second << ") " << endl;
-  }  
-
   bipartite_matching();
   vector<schedule_t> schedule;
   for(auto& m : match){
