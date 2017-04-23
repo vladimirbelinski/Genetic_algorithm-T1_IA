@@ -13,7 +13,7 @@
 
 #include "ia.h"
 
-#define DEBUG 0
+#define DEBUG
 
 using namespace std;
 
@@ -106,7 +106,80 @@ void read_subjects() {
     professor_courses[professor].push_back(course);
   }
 }
-  
+
+map<string, set<int> > build_professor_schedules(const person_t person){
+  map<string, set<int> > professor_schedules;
+  for(auto& schedule : person.schedules){
+    if (professor_schedules.find(schedule.subject.professor) == professor_schedules.end())
+      professor_schedules[schedule.subject.professor] = set<int>();
+    professor_schedules[schedule.subject.professor].insert(schedule.schedule);
+  }
+  return professor_schedules;
+}
+
+int count_schedules_to_avoid_infringements(const string professor, const set<int> schedules){
+  int count = 0;
+  for(auto& schedule : schedules){
+    auto& schedules_to_avoid = professors[professor];
+    count += find(schedules_to_avoid.begin(), schedules_to_avoid.end(), schedule) != schedules_to_avoid.end();
+  }
+  return count;
+}
+
+int count_morning_night_infringements(const set<int> schedules){
+  int count = 0;
+  for(int i = 0; i < 9; i += 2)
+    count += (schedules.find(i) != schedules.end() || schedules.find(i + 1) != schedules.end()) &&
+      (schedules.find(i + 20) != schedules.end() || schedules.find(i + 21) != schedules.end());
+  return count;
+}
+
+int count_consecutive_schedules_infringements(const set<int> schedules){
+  int count = 0;
+  for(int i = 0; i < 29; i += 2)
+    count += schedules.find(i) != schedules.end() && schedules.find(i + 1) != schedules.end();
+  return count;
+}
+
+int count_restriction_infringements(const set<int> schedules){
+  int count = 0;
+  count += schedules.find(21) != schedules.end() && schedules.find(2) != schedules.end();
+  count += schedules.find(23) != schedules.end() && schedules.find(4) != schedules.end();
+  count += schedules.find(25) != schedules.end() && schedules.find(6) != schedules.end();
+  count += schedules.find(27) != schedules.end() && schedules.find(8) != schedules.end();
+  return count;
+}
+
+int fitness(const person_t person){
+  int fit =
+        (   30  // nota pelo professor não dar aula nos horários que não deseja, -1 por horário infringido
+          + 30  // nota pelo professor não dar aula no matutino e noturno do mesmo dia, -6 por dia infringido
+          + 30  // nota pelo professor não dar aula-faixa, -2 por turno infringido
+          + 840 // nota pelo professor não dar aula no último horário de uma noite e no primeiro da manhã seguinte, -210 por infração
+        ) * professors.size(); // para cada professor
+  map<string, set<int> > professor_schedules = build_professor_schedules(person);
+  for(auto& professor_schedule : professor_schedules){
+    int schedules_to_avoid_infringements = count_schedules_to_avoid_infringements(professor_schedule.first, professor_schedule.second);
+    fit -= schedules_to_avoid_infringements;
+
+    int morning_night_infringements = count_morning_night_infringements(professor_schedule.second);
+    fit -= (morning_night_infringements * 6);
+
+    int consecutive_schedules_infringements = count_consecutive_schedules_infringements(professor_schedule.second);
+    fit -= (consecutive_schedules_infringements + consecutive_schedules_infringements); // * 2
+
+    int restriction_infringements = count_restriction_infringements(professor_schedule.second);
+    fit -= (restriction_infringements * 210);
+  }
+  return fit;
+}
+
+long fitness(population_t population){
+  long fit = 0;
+  for(auto& person : population.people) fit += fitness(person);
+  return fit;
+}
+
 vector< vector<int> > permutations;
 void generate_people_permutation(){
   for(int i = 0; i < (int)professors.size(); i++){
@@ -144,12 +217,12 @@ void generate_people_permutation(){
   }
 }
 
-vector< vector<schedule_t> > population;
+population_t population;
 void generate_population(int group_size){
   for(int i = 0,group; i < (int)permutations.size(); i++,group = 0){
     do{
       group++;
-      vector<schedule_t> person;
+      person_t person;
       set<ii> allocated_room_schedules;
       for(int j = 0; j < (int)permutations[i].size(); j++){
         set<int> allocated_professor_schedules;
@@ -180,8 +253,8 @@ void generate_population(int group_size){
                 #endif
                 allocated_room_schedules.insert(room_schedule);
                 allocated_professor_schedules.insert(available_schedule);
-                schedule_t schedule = schedule_t({room,professor,subject,subject.period_quantity--,available_schedule});
-                person.push_back(schedule);
+                schedule_t schedule = schedule_t({room,subject,subject.period_quantity--,available_schedule});
+                person.schedules.push_back(schedule);
                 #ifdef DEBUG
                   print_schedule(schedule);
                 #endif
@@ -190,14 +263,14 @@ void generate_population(int group_size){
           }
         }
       }
-      population.push_back(person);
+      population.people.push_back(person);
     }while(next_permutation(permutations[i].begin(),permutations[i].end()) && group < group_size);
   }
 }
 
 struct schedule_t_comp{
   bool operator()(schedule_t a,schedule_t b){
-    int diff = a.professor.compare(b.professor);
+    int diff = a.subject.professor.compare(b.subject.professor);
     if(diff) return diff < 0;
     diff = a.subject.course.compare(b.subject.course);
     if(diff) return diff < 0;
@@ -221,26 +294,26 @@ int Aug(schedule_t v){
   knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
   uniform_int_distribution<int> distribution(0,1);
   auto dice = bind(distribution, generator);
-  if(dice()){    
-    if(embryo[v].first != ii(-1,-1) && 
-        match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+  if(dice()){
+    if(embryo[v].first != ii(-1,-1) &&
+        (match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first]))){
       match[embryo[v].first] = v;
       return 1;
     }
-    if(embryo[v].second != ii(-1,-1) && 
-        match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+    if(embryo[v].second != ii(-1,-1) &&
+        (match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second]))){
       match[embryo[v].second] = v;
       return 1;
     }
   }
   else{
-    if(embryo[v].second != ii(-1,-1) && 
-        match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second])){
+    if(embryo[v].second != ii(-1,-1) &&
+        (match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second]))){
       match[embryo[v].second] = v;
       return 1;
     }
-    if(embryo[v].first != ii(-1,-1) && 
-        match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first])){
+    if(embryo[v].first != ii(-1,-1) &&
+        (match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first]))){
       match[embryo[v].first] = v;
       return 1;
     }
@@ -257,34 +330,33 @@ bool bipartite_matching(){
   return m == (int)embryo.size();
 }
 
-vector<schedule_t> cross(vector<schedule_t> & person1, vector<schedule_t> & person2){
+person_t cross(person_t & father, person_t & mother){
   embryo.clear();
-
-  map<string,set<int> > check_repeated_schedule;
-  for(auto p : person1) {
-    if(check_repeated_schedule.find(p.professor) == check_repeated_schedule.end()) 
-      check_repeated_schedule[p.professor] = set<int>();    
-    if(check_repeated_schedule[p.professor].find(p.schedule) == check_repeated_schedule[p.professor].end()){  
-      embryo[p].first = ii(p.room.number,p.schedule);    
-      check_repeated_schedule[p.professor].insert(p.schedule);
+  map<string, set<int> > check_repeated_schedule;
+  for(auto schedule : father.schedules) {
+    if(check_repeated_schedule.find(schedule.subject.professor) == check_repeated_schedule.end())
+      check_repeated_schedule[schedule.subject.professor] = set<int>();
+    if(check_repeated_schedule[schedule.subject.professor].find(schedule.schedule) == check_repeated_schedule[schedule.subject.professor].end()){
+      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);
+      check_repeated_schedule[schedule.subject.professor].insert(schedule.schedule);
     }
-    else embryo[p].first = ii(-1,-1);
+    else embryo[schedule].first = ii(-1,-1);
   }
-  for(auto p : person2) {
-    if(check_repeated_schedule.find(p.professor) == check_repeated_schedule.end()) 
-      check_repeated_schedule[p.professor] = set<int>();    
-    if(check_repeated_schedule[p.professor].find(p.schedule) == check_repeated_schedule[p.professor].end()){  
-      embryo[p].first = ii(p.room.number,p.schedule);    
-      check_repeated_schedule[p.professor].insert(p.schedule);
+  for(auto schedule : mother.schedules) {
+    if(check_repeated_schedule.find(schedule.subject.professor) == check_repeated_schedule.end())
+      check_repeated_schedule[schedule.subject.professor] = set<int>();
+    if(check_repeated_schedule[schedule.subject.professor].find(schedule.schedule) == check_repeated_schedule[schedule.subject.professor].end()){
+      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);
+      check_repeated_schedule[schedule.subject.professor].insert(schedule.schedule);
     }
-    else embryo[p].first = ii(-1,-1);
+    else embryo[schedule].first = ii(-1,-1);
   }
   bipartite_matching();
-  vector<schedule_t> schedule;
+  person_t child;
   for(auto& m : match){
-    schedule.push_back(m.second);
+    child.schedules.push_back(m.second);
   }
-  return schedule;
+  return child;
 }
 
 void print_room(room_t room){
@@ -306,17 +378,18 @@ void print_courses(void) {
 }
 
 void print_schedule(schedule_t schedule) {
-  cout << schedule.period << " " << schedule.subject.code << " " << schedule.professor << " " << schedule.room.course << " " << schedule.room.number << " " << schedule.schedule << endl;
+  cout << schedule.period << " " << schedule.subject.code << " " << schedule.subject.professor << " " << schedule.room.course << " " << schedule.room.number << " " << schedule.schedule << endl;
 }
 
-void print_person(vector<schedule_t> person){
-  for(auto& schedule : person){
+void print_person(person_t person){
+  cout << "Person with fitness " << person.fitness << " and schedules:" << endl;
+  for(auto& schedule : person.schedules){
     print_schedule(schedule);
   }
 }
 
-void print_population(void){
-  for(auto& person : population)
+void print_population(population_t population){
+  for(auto& person : population.people)
     print_person(person);
 }
 
@@ -360,14 +433,21 @@ int main(void){
   generate_people_permutation();
   generate_population(POPULATION_SIZE / (int)professors.size());
   #ifdef DEBUG
-    print_population();
+    print_population(population);
   #endif
-  vector<schedule_t> person = cross(population.front(),population.back());    
-  printf("\nPerson 1, size:%d\n",(int)population.front().size());
-  print_person(population.front());
-  printf("\nPerson 2, size:%d\n",(int)population.back().size());
-  print_person(population.back());
-  printf("\nChild, size:%d\n",(int)person.size());
-  print_person(person);
+  person_t father = population.people.front();
+  person_t mother = population.people.back();
+  person_t child = cross(father, mother);
+  printf("\nFather, size: %d\n",(int)father.schedules.size());
+  print_person(father);
+  printf("\nMother, size: %d\n",(int)mother.schedules.size());
+  print_person(mother);
+  printf("\nChild, size: %d\n",(int)child.schedules.size());
+  print_person(child);
+
+  cout << endl;
+  cout << "Fitness of the father: " << fitness(father) << endl;
+  cout << "Fitness of the mother: " << fitness(mother) << endl;
+  cout << "Fitness of the child: " << fitness(child) << endl;
   return 0;
 }

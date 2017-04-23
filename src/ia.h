@@ -14,12 +14,25 @@ typedef struct Subject {
   string code, course, professor;
 } subject_t;
 
+/*
+  period é o número da aula (de 1 a N, inclusive, dado na entrada)
+  schedule é o horário da semana, de 0 a 29
+*/
 typedef struct Schedule {
   room_t room;
-  string professor;
   subject_t subject;
   int period, schedule;
 } schedule_t;
+
+typedef struct Person {
+  int fitness = 0;
+  vector<schedule_t> schedules;
+} person_t;
+
+typedef struct Population {
+  long fitness = 0;
+  vector<person_t> people;
+} population_t;
 
 void print_professors(void);
 
@@ -31,5 +44,5 @@ void print_subject(subject_t subject);
 void print_subjects(void);
 
 void print_schedule(schedule_t);
-void print_person(vector<schedule_t>);
-void print_population(void);
+void print_person(person_t);
+void print_population(population_t);
