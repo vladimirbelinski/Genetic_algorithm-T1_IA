@@ -1,3 +1,11 @@
+/* Arquivo: ia.h
+   Autores: Gabriel Batista Galli, Matheus Antonio Venancio Dall'Rosa e Vladimir Belinski
+   Descrição: o presente arquivo faz parte da resolução do Trabalho I do CCR Inteligência Artificial, 2017-1, do curso de
+              Ciência da Computação da Universidade Federal da Fronteira Sul - UFFS, o qual consiste na implementação de
+              um algoritmo genético para calcular a tabela de horários dos CCRs do curso de Ciência da Computação da UFFS.
+              --> ia.h é o arquivo cabeçalho de main.cpp
+*/
+
 #include <map>
 #include <vector>
 

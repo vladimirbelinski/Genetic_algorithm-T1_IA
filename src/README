@@ -1,0 +1,13 @@
+/* Arquivo: README
+   Autores: Gabriel Batista Galli, Matheus Antonio Venancio Dall'Rosa e Vladimir Belinski
+   Descrição: o presente arquivo faz parte da resolução do Trabalho I do CCR Inteligência Artificial, 2017-1, do curso de
+              Ciência da Computação da Universidade Federal da Fronteira Sul - UFFS, o qual consiste na implementação de
+              um algoritmo genético para calcular a tabela de horários dos CCRs do curso de Ciência da Computação da UFFS.
+              --> README contém instruções relevantes à compilação, execução e uso do programa
+*/
+
+Compilação e execução: em ambiente Linux, estando na pasta "src" e tendo os arquivos de entrada salvos na pasta "input" e
+                       sob a extensão ".in", executar o comando "make run INPUT=filename", onde filename corresponde ao nome do
+                       arquivo de entrada sem extensão.
+                       E.g.: considerando a existência de um arquivo de entrada salvo na pasta "input" com o nome "1.in", sua
+                       compilação e execução se daria através do comando: make run INPUT=1
