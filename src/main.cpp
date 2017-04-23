@@ -34,19 +34,20 @@ const int POPULATION_SIZE = 28;
 vector<string> professor_index;
 
 // Map de nomes de professores para os
-// horários que ele não quer dar aula
+// horários nos quais ele não deseja
+// ministrar aulas.
 map<string, vector<int> > professors;
 
-// Map entre professor e cursos que ele leciona.
+// Map entre professor e cursos que ele ministra.
 map<string, vector<string> > professor_courses;
 
-// Vetor de todas as salas disponíveis
+// Vector de todas as salas disponíveis.
 vector<room_t> rooms;
 
-// Map de cursos para suas salas
+// Map de cursos para suas salas.
 map<string, vector<room_t> > courses;
 
-// Map de cursos para suas disciplinas
+// Map de cursos para seus CCRs.
 map<string, vector<subject_t> > subjects;
 
 bool room_comp(room_t &a,room_t &b){
@@ -61,6 +62,8 @@ bool room_comp(room_t &a,room_t &b){
   return a.course.compare(b.course) < 0;
 }
 
+// Função que realiza a leitura dos professores e horários que não desejam
+// ministrar aulas a partir do arquivo de entrada.
 void read_professors(){
   int professor_quantity;
   cin >> professor_quantity;
@@ -79,6 +82,8 @@ void read_professors(){
   }
 }
 
+// Função que realiza a leitura dos cursos/semestres, salas e horários
+// disponíveis para as salas a partir do arquivo de entrada.
 void read_room_schedules(){
   int room_quantity;
   cin >> room_quantity;
@@ -103,6 +108,9 @@ void read_room_schedules(){
   for(auto& room: rooms) courses[room.course].push_back(room);
 }
 
+// Função que realiza a leitura dos CCRs, períodos, cursos/semestres e
+// professores a partir do arquivo de entrada, ou seja, das associações
+// dos professores aos CCRs e suas respectivas fases.
 void read_subjects() {
   int subject_quantity;
   cin >> subject_quantity;
@@ -115,6 +123,8 @@ void read_subjects() {
   }
 }
 
+// Função que monta os horários de um professor (em uma estrutura), a fim
+// de serem analisados na função de fitness.
 map<string, set<int> > build_professor_schedules(const person_t person){
   map<string, set<int> > professor_schedules;
   for(auto& schedule : person.schedules){
@@ -125,6 +135,9 @@ map<string, set<int> > build_professor_schedules(const person_t person){
   return professor_schedules;
 }
 
+// Função auxiliar ao cálculo da fitness de um indivíduo.
+// Calcula a quantidade de violações da preferência relacionada a
+// um professor estar dando aulas em um horário em que não deseja.
 int count_schedules_to_avoid_infringements(const string professor, const set<int> schedules){
   int count = 0;
   for(auto& schedule : schedules){
@@ -134,6 +147,10 @@ int count_schedules_to_avoid_infringements(const string professor, const set<int
   return count;
 }
 
+// Função auxiliar ao cálculo da fitness de um indivíduo.
+// Calcula a quantidade de violações da preferência relacionada a
+// um professor ministrar aulas no período matutino e noturno no
+// mesmo dia.
 int count_morning_night_infringements(const set<int> schedules){
   int count = 0;
   for(int i = 0; i < 9; i += 2)
@@ -142,6 +159,9 @@ int count_morning_night_infringements(const set<int> schedules){
   return count;
 }
 
+// Função auxiliar ao cálculo da fitness de um indivíduo.
+// Calcula a quantidade de violações da preferência relacionada à
+// inexistência de 2 horários consecutivos para um mesmo professor.
 int count_consecutive_schedules_infringements(const set<int> schedules){
   int count = 0;
   for(int i = 0; i < 29; i += 2)
@@ -149,6 +169,10 @@ int count_consecutive_schedules_infringements(const set<int> schedules){
   return count;
 }
 
+// Função auxiliar ao cálculo da fitness de um indivíduo.
+// Calcula a quantidade de violações da restrição relacionada à
+// existência de aulas de um mesmo professor no último horário de
+// uma noite e no primeiro horário da manhã seguinte.
 int count_restriction_infringements(const set<int> schedules){
   int count = 0;
   count += schedules.find(21) != schedules.end() && schedules.find(2) != schedules.end();
@@ -158,6 +182,7 @@ int count_restriction_infringements(const set<int> schedules){
   return count;
 }
 
+// Função que calcula a fitness de um indivíduo.
 int fitness(const person_t person){
   int fit =
         (   30  // nota pelo professor não dar aula nos horários que não deseja, -1 por horário infringido
@@ -182,41 +207,33 @@ int fitness(const person_t person){
   return fit;
 }
 
+// Função que calcula a fitness de uma população.
 long fitness(population_t population){
   long fit = 0;
   for(auto& person : population.people) fit += fitness(person);
   return fit;
 }
 
+// Função auxiliar à função que gera a população inicial a ser utilizada ao
+// longo do programa.
 vector< vector<int> > permutations;
 void generate_people_permutation(){
   for(int i = 0; i < (int)professors.size(); i++){
-    /*
-      A lista check contém todos os professores ainda não sorteados.
-    */
+    // A lista check contém todos os professores ainda não sorteados.
     list<int> check;
-    /*
-      Adcionar à lista de não sorteados todos os professores diferentes de i.
-    */
+    // Adcionar à lista de não sorteados todos os professores diferees de i.
     for(int j = 0; j < (int)professors.size(); j++)
       if(j != i) check.push_back(j);
-
-    /*
-      O vector perm representa uma permutação de professores.
-    */
+    // O vector perm representa uma permutação de professores.
     vector<int> perm;
     perm.push_back(i);
     while(!check.empty()){
-      /*
-        Sorteio do próximo professor.
-      */
+      // Sorteio do próximo professor.
       knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
       uniform_int_distribution<int> distribution(0,((int)check.size())-1);
       auto dice = bind(distribution, generator);
       auto it = check.begin();
-      /*
-        Retirar professor da lista de não sorteados.
-      */
+      // Retirar professor da lista de não sorteados.
       advance(it,dice());
       perm.push_back(*it);
       check.erase(it);
@@ -225,6 +242,7 @@ void generate_people_permutation(){
   }
 }
 
+// Função que gera a população inicial a ser utilizada ao longo do programa.
 population_t population;
 void generate_population(int group_size){
   for(int i = 0,group; i < (int)permutations.size(); i++,group = 0){
@@ -288,6 +306,7 @@ struct schedule_t_comp{
     return diff < 0;
   }
 };
+
 /*
 chave first: Sala
 chave second; Horário.
@@ -354,6 +373,8 @@ bool bipartite_matching(){
   return m == (int)embryo.size();
 }
 */
+
+// Função de cruzamento de dois indivíduos.
 person_t cross(person_t & father, person_t & mother){
   embryo.clear();
   map<string, set<int> > check_repeated_schedule;
@@ -414,6 +435,8 @@ person_t cross(person_t & father, person_t & mother){
   return child;
 }
 
+// Função que imprime informações referentes a uma sala de aula.
+// Utilizada para debug.
 void print_room(room_t room){
   cout << room.course << " " << room.number << " ";
   for(auto& available_schedule: room.available_schedules)
@@ -421,10 +444,14 @@ void print_room(room_t room){
   cout << endl;
 }
 
+// Função que imprime informações referentes às salas de aula.
+// Utilizada para debug.
 void print_rooms(vector<room_t> rooms) {
   for(auto& room: rooms) print_room(room);
 }
 
+// Função que imprime informações referentes aos cursos.
+// Utilizada para debug.
 void print_courses(void) {
   for(auto& course: courses){
     cout << course.first << endl;
@@ -432,10 +459,14 @@ void print_courses(void) {
   }
 }
 
+// Função que imprime informações referentes a um horário.
+// Utilizada para debug.
 void print_schedule(schedule_t schedule) {
   cout << schedule.period << " " << schedule.subject.code << " " << schedule.subject.professor << " " << schedule.room.course << " " << schedule.room.number << " " << schedule.schedule << endl;
 }
 
+// Função que imprime informações referentes a um indivíduo.
+// Utilizada para debug.
 void print_person(person_t person){
   cout << "Person with fitness " << person.fitness << " and schedules:" << endl;
   for(auto& schedule : person.schedules){
@@ -443,15 +474,21 @@ void print_person(person_t person){
   }
 }
 
+// Função que imprime informações referentes a população.
+// Utilizada para debug.
 void print_population(population_t population){
   for(auto& person : population.people)
     print_person(person);
 }
 
+// Função que imprime informações referentes a um CCR.
+// Utilizada para debug.
 void print_subject(subject_t subject){
   cout << subject.course << " " << subject.code << " " << subject.professor << " " << subject.period_quantity << endl;
 }
 
+// Função que imprime informações referentes aos CCRs.
+// Utilizada para debug.
 void print_subjects(void){
   for(auto& course : subjects){
     cout << course.first << endl;
@@ -460,6 +497,8 @@ void print_subjects(void){
   }
 }
 
+// Função que imprime informações referentes aos professores.
+// Utilizada para debug.
 void print_professors(void){
   for(auto& professor : professors){
     cout << professor.first << " ";
@@ -469,6 +508,7 @@ void print_professors(void){
   }
 }
 
+// Função principal do programa.
 int main(void){
   read_professors();
   #ifdef DEBUG
@@ -490,7 +530,7 @@ int main(void){
   #ifdef DEBUG
     print_population(population);
   #endif
-  //for(int i = 1; i < (int)population.people.size(); i++){
+  // for(int i = 1; i < (int)population.people.size(); i++){
     person_t father = population.people.front();
     person_t mother = population.people.back();
     person_t child = cross(father, mother);
