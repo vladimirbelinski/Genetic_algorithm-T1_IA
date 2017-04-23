@@ -217,6 +217,18 @@ void generate_people_permutation(){
   }
 }
 
+struct schedule_t_comp{
+  bool operator()(schedule_t a,schedule_t b){
+    int diff = a.subject.professor.compare(b.subject.professor);
+    if(diff) return diff < 0;
+    diff = a.subject.course.compare(b.subject.course);
+    if(diff) return diff < 0;
+    diff = a.subject.code.compare(b.subject.code);
+    if(diff) return diff < 0;
+    return a.period < b.period;
+  }
+};
+
 population_t population;
 void generate_population(int group_size){
   for(int i = 0,group; i < (int)permutations.size(); i++,group = 0){
@@ -240,20 +252,22 @@ void generate_population(int group_size){
               cout << "Course: " << course << endl;
             #endif
             for(auto& subject : subjects[course]){
-              if(professor.compare(subject.professor) || !subject.period_quantity) continue;
+              if(professor.compare(subject.professor)) continue;
+              int period = 0;
               #ifdef DEBUG
                 cout << "Subject: "; print_subject(subject);
               #endif
               for(auto& available_schedule : room.available_schedules){
-                if(!subject.period_quantity) break;
+                if(period >= subject.period_quantity) break;
                 ii room_schedule(room.number,available_schedule);
-                if(allocated_room_schedules.find(room_schedule) != allocated_room_schedules.end() || allocated_professor_schedules.find(available_schedule) != allocated_professor_schedules.end()) continue;
+                if(allocated_room_schedules.find(room_schedule) != allocated_room_schedules.end() 
+                    || allocated_professor_schedules.find(available_schedule) != allocated_professor_schedules.end()) continue;
                 #ifdef DEBUG
                   cout << "Available schedule: " << available_schedule << endl;
                 #endif
                 allocated_room_schedules.insert(room_schedule);
                 allocated_professor_schedules.insert(available_schedule);
-                schedule_t schedule = schedule_t({room,subject,subject.period_quantity--,available_schedule});
+                schedule_t schedule = schedule_t({room,subject,period++,available_schedule});
                 person.schedules.push_back(schedule);
                 #ifdef DEBUG
                   print_schedule(schedule);
@@ -268,17 +282,6 @@ void generate_population(int group_size){
   }
 }
 
-struct schedule_t_comp{
-  bool operator()(schedule_t a,schedule_t b){
-    int diff = a.subject.professor.compare(b.subject.professor);
-    if(diff) return diff < 0;
-    diff = a.subject.course.compare(b.subject.course);
-    if(diff) return diff < 0;
-    diff = a.subject.code.compare(b.subject.code);
-    if(diff) return diff < 0;
-    return a.room.number < b.room.number;
-  }
-};
 /*
 chave first: Sala
 chave second; Horário.
@@ -305,8 +308,8 @@ int Aug(schedule_t v){
       match[embryo[v].second] = v;
       return 1;
     }
-  }
-  else{
+  } 
+  else{ 
     if(embryo[v].second != ii(-1,-1) &&
         (match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second]))){
       match[embryo[v].second] = v;
@@ -316,7 +319,7 @@ int Aug(schedule_t v){
         (match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first]))){
       match[embryo[v].first] = v;
       return 1;
-    }
+    } 
   }
   return 0;
 }
@@ -332,30 +335,30 @@ bool bipartite_matching(){
 
 person_t cross(person_t & father, person_t & mother){
   embryo.clear();
-  map<string, set<int> > check_repeated_schedule;
-  for(auto schedule : father.schedules) {
-    if(check_repeated_schedule.find(schedule.subject.professor) == check_repeated_schedule.end())
-      check_repeated_schedule[schedule.subject.professor] = set<int>();
-    if(check_repeated_schedule[schedule.subject.professor].find(schedule.schedule) == check_repeated_schedule[schedule.subject.professor].end()){
-      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);
-      check_repeated_schedule[schedule.subject.professor].insert(schedule.schedule);
+  map<string, set<int> > check_repeated_schedule;  
+  for(auto schedule : father.schedules) {    
+    string professor = schedule.subject.professor;
+    if(check_repeated_schedule.find(professor) == check_repeated_schedule.end())
+      check_repeated_schedule[professor] = set<int>();
+    if(check_repeated_schedule[professor].find(schedule.schedule) == check_repeated_schedule[professor].end()){            
+      check_repeated_schedule[professor].insert(schedule.schedule);      
+      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);      
     }
-    else embryo[schedule].first = ii(-1,-1);
+    else embryo[schedule].first = ii(-1,-1);    
   }
   for(auto schedule : mother.schedules) {
-    if(check_repeated_schedule.find(schedule.subject.professor) == check_repeated_schedule.end())
-      check_repeated_schedule[schedule.subject.professor] = set<int>();
-    if(check_repeated_schedule[schedule.subject.professor].find(schedule.schedule) == check_repeated_schedule[schedule.subject.professor].end()){
-      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);
-      check_repeated_schedule[schedule.subject.professor].insert(schedule.schedule);
+    string professor = schedule.subject.professor;
+    if(check_repeated_schedule.find(professor) == check_repeated_schedule.end())
+      check_repeated_schedule[professor] = set<int>();
+    if(check_repeated_schedule[professor].find(schedule.schedule) == check_repeated_schedule[professor].end()){            
+      check_repeated_schedule[professor].insert(schedule.schedule);      
+      embryo[schedule].second = ii(schedule.room.number,schedule.schedule);      
     }
-    else embryo[schedule].first = ii(-1,-1);
+    else embryo[schedule].second = ii(-1,-1);      
   }
   bipartite_matching();
   person_t child;
-  for(auto& m : match){
-    child.schedules.push_back(m.second);
-  }
+  for(auto& m : match) child.schedules.push_back(m.second);  
   return child;
 }
 
@@ -435,19 +438,20 @@ int main(void){
   #ifdef DEBUG
     print_population(population);
   #endif
-  person_t father = population.people.front();
-  person_t mother = population.people.back();
-  person_t child = cross(father, mother);
-  printf("\nFather, size: %d\n",(int)father.schedules.size());
-  print_person(father);
-  printf("\nMother, size: %d\n",(int)mother.schedules.size());
-  print_person(mother);
-  printf("\nChild, size: %d\n",(int)child.schedules.size());
-  print_person(child);
-
-  cout << endl;
-  cout << "Fitness of the father: " << fitness(father) << endl;
-  cout << "Fitness of the mother: " << fitness(mother) << endl;
-  cout << "Fitness of the child: " << fitness(child) << endl;
+  //for(int i = 1; i < (int)population.people.size(); i++){
+    person_t father = population.people.front();
+    person_t mother = population.people.back();
+    person_t child = cross(father, mother);
+    printf("\nFather, size: %d\n",(int)father.schedules.size());
+    print_person(father);
+    printf("\nMother, size: %d\n",(int)mother.schedules.size());
+    print_person(mother);
+    printf("\nChild, size: %d\n",(int)child.schedules.size());
+    print_person(child);
+    cout << "Fitness of the father: " << fitness(father) << endl;
+    cout << "Fitness of the mother: " << fitness(mother) << endl;
+    cout << "Fitness of the child: " << fitness(child) << endl;
+  //  if(child.schedules.size() == mother.schedules.size()) break;
+//  }
   return 0;
 }
