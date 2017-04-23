@@ -217,18 +217,6 @@ void generate_people_permutation(){
   }
 }
 
-struct schedule_t_comp{
-  bool operator()(schedule_t a,schedule_t b){
-    int diff = a.subject.professor.compare(b.subject.professor);
-    if(diff) return diff < 0;
-    diff = a.subject.course.compare(b.subject.course);
-    if(diff) return diff < 0;
-    diff = a.subject.code.compare(b.subject.code);
-    if(diff) return diff < 0;
-    return a.period < b.period;
-  }
-};
-
 population_t population;
 void generate_population(int group_size){
   for(int i = 0,group; i < (int)permutations.size(); i++,group = 0){
@@ -282,45 +270,70 @@ void generate_population(int group_size){
   }
 }
 
+struct schedule_t_comp{
+  bool operator()(schedule_t a,schedule_t b){
+    int diff = a.subject.professor.compare(b.subject.professor);
+    if(diff) return diff < 0;
+    diff = a.subject.course.compare(b.subject.course);
+    if(diff) return diff < 0;
+    diff = a.subject.code.compare(b.subject.code);
+    return diff < 0;
+  }
+};
 /*
 chave first: Sala
 chave second; Horário.
 Valor: professor, matéria e sala.
 */
-set<schedule_t,schedule_t_comp> vis;
-map< ii, schedule_t > match;
-map<schedule_t,_4i,schedule_t_comp> embryo;
+//set<schedule_t,schedule_t_comp> vis;
+//map< ii, schedule_t > match;
+map<schedule_t,set<ii>,schedule_t_comp> embryo;
 
+struct available_schedules{
+  schedule_t schedule;
+  vector<ii> room_schedule;
+  available_schedules(schedule_t _schedule){
+    schedule = _schedule;
+  }
+  
+  void add_room_schedule(ii k){
+    room_schedule.push_back(k);
+  }
+};
+
+bool available_schedules_comp(available_schedules a,available_schedules b){
+  if(a.schedule.subject.period_quantity != b.schedule.subject.period_quantity)
+    return a.schedule.subject.period_quantity < b.schedule.subject.period_quantity;
+  return a.room_schedule.size() < b.room_schedule.size();
+}
+
+/*
 int Aug(schedule_t v){
   if(vis.find(v) != vis.end()) return 0;
-  vis.insert(v);
+  vis.insert(v);  
   knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
   uniform_int_distribution<int> distribution(0,1);
   auto dice = bind(distribution, generator);
   if(dice()){
-    if(embryo[v].first != ii(-1,-1) &&
-        (match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first]))){
-      match[embryo[v].first] = v;
-      return 1;
-    }
-    if(embryo[v].second != ii(-1,-1) &&
-        (match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second]))){
-      match[embryo[v].second] = v;
-      return 1;
-    }
+    cout << "sorteado 1: " << v.subject.professor << " " << v.period << " " << v.room.number << " " << v.schedule << endl;
+    for(int k = 0; k < (int)embryo[v].size(); k++){
+      if(embryo[v][k] != ii(-1,-1) &&
+          (match.find(embryo[v][k]) == match.end() || Aug(match[embryo[v][k]]))){
+        match[embryo[v][k]] = v;
+        return 1;
+      }
+    }  
   } 
-  else{ 
-    if(embryo[v].second != ii(-1,-1) &&
-        (match.find(embryo[v].second) == match.end() || Aug(match[embryo[v].second]))){
-      match[embryo[v].second] = v;
-      return 1;
-    }
-    if(embryo[v].first != ii(-1,-1) &&
-        (match.find(embryo[v].first) == match.end() || Aug(match[embryo[v].first]))){
-      match[embryo[v].first] = v;
-      return 1;
-    } 
-  }
+  else{
+    cout << "sorteado 0: " << v.subject.professor << " " << v.period << " " << v.room.number << " " << v.schedule << endl;
+    for(int k = (int)embryo[v].size() - 1; k >= 0; k--){
+      if(embryo[v][k] != ii(-1,-1) &&
+          (match.find(embryo[v][k]) == match.end() || Aug(match[embryo[v][k]]))){
+        match[embryo[v][k]] = v;
+        return 1;
+      }
+    }  
+  } 
   return 0;
 }
 
@@ -332,7 +345,7 @@ bool bipartite_matching(){
   }
   return m == (int)embryo.size();
 }
-
+*/
 person_t cross(person_t & father, person_t & mother){
   embryo.clear();
   map<string, set<int> > check_repeated_schedule;  
@@ -342,9 +355,8 @@ person_t cross(person_t & father, person_t & mother){
       check_repeated_schedule[professor] = set<int>();
     if(check_repeated_schedule[professor].find(schedule.schedule) == check_repeated_schedule[professor].end()){            
       check_repeated_schedule[professor].insert(schedule.schedule);      
-      embryo[schedule].first = ii(schedule.room.number,schedule.schedule);      
+      embryo[schedule].insert(ii(schedule.room.number,schedule.schedule));      
     }
-    else embryo[schedule].first = ii(-1,-1);    
   }
   for(auto schedule : mother.schedules) {
     string professor = schedule.subject.professor;
@@ -352,13 +364,45 @@ person_t cross(person_t & father, person_t & mother){
       check_repeated_schedule[professor] = set<int>();
     if(check_repeated_schedule[professor].find(schedule.schedule) == check_repeated_schedule[professor].end()){            
       check_repeated_schedule[professor].insert(schedule.schedule);      
-      embryo[schedule].second = ii(schedule.room.number,schedule.schedule);      
+      embryo[schedule].insert(ii(schedule.room.number,schedule.schedule));      
     }
-    else embryo[schedule].second = ii(-1,-1);      
   }
-  bipartite_matching();
+  vector<available_schedules> pool;
+  cout << "Embryo" << endl;
+  for(auto& e : embryo){
+    available_schedules k(e.first); 
+    cout << e.first.subject.code << " " << e.first.subject.professor << " " << e.first.period << endl;
+    for(auto& s : e.second){
+      k.add_room_schedule(ii(s.first, s.second));    
+      cout << "   " << s.first << " " << s.second << endl;
+    }
+    pool.push_back(k);
+  }
+  cout << endl;
+  
+  set<ii> allocated_room_schedules;
+  sort(pool.begin(),pool.end(),available_schedules_comp);
   person_t child;
-  for(auto& m : match) child.schedules.push_back(m.second);  
+  for(auto& e : pool){
+    available_schedules k(e.schedule); 
+    cout << e.schedule.subject.code << " " << e.schedule.subject.professor << " " << e.schedule.period << endl;
+    for(auto&s : e.room_schedule){
+      cout << "   " << s.first << " " << s.second << endl;
+    }
+    for(int i = 0; i < e.schedule.subject.period_quantity && e.room_schedule.size();){
+      knuth_b generator(chrono::system_clock::now().time_since_epoch().count());
+      uniform_int_distribution<int> distribution(0,((int)e.room_schedule.size())-1);
+      auto dice = bind(distribution, generator);
+      int idx = dice();
+      if(allocated_room_schedules.find(e.room_schedule[idx]) == allocated_room_schedules.end()){ 
+        allocated_room_schedules.insert(e.room_schedule[idx]);        
+        int r = e.room_schedule[idx].first, s = e.room_schedule[idx].second;
+        child.schedules.push_back(schedule_t({room_t({r}),e.schedule.subject,i,s}));
+        i++;
+      }
+      e.room_schedule.erase(e.room_schedule.begin()+idx);
+    }
+  }  
   return child;
 }
 
