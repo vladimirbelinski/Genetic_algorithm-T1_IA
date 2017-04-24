@@ -214,7 +214,7 @@ int fitness(const person_t person){
     fit -= (consecutive_schedules_infringements + consecutive_schedules_infringements); // * 2
 
     int restriction_infringements = count_restriction_infringements(professor_schedule.second);
-    fit -= (restriction_infringements * 210);
+    fit -= (restriction_infringements * 90);
   }
   return fit;
 }
@@ -647,7 +647,7 @@ int main(void){
     (   30  // nota pelo professor não dar aula nos horários que não deseja, -1 por horário infringido
       + 30  // nota pelo professor não dar aula no matutino e noturno do mesmo dia, -6 por dia infringido
       + 30  // nota pelo professor não dar aula-faixa, -2 por turno infringido
-      + 840 // nota pelo professor não dar aula no último horário de uma noite e no primeiro da manhã seguinte, -210 por infração
+      + 360 // nota pelo professor não dar aula no último horário de uma noite e no primeiro da manhã seguinte, -210 por infração
     ) * professors.size(); // para cada professor
   max_population_fitness = max_person_fitness * POPULATION_SIZE;
 
