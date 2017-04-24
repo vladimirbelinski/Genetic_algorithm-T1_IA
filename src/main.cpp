@@ -341,7 +341,7 @@ void generate_population(int group_size) {
 bool available_schedules_comp(available_schedules &a,available_schedules &b) {
   if(a.schedule.subject.period_quantity != b.schedule.subject.period_quantity)
     return a.schedule.subject.period_quantity < b.schedule.subject.period_quantity;
-  return a.room_schedule.size() < b.room_schedule.size();
+  return a.room_schedule.size() > b.room_schedule.size();
 }
 
 // Função de cruzamento de dois indivíduos.
