@@ -1,4 +1,0 @@
-Uma disciplina é composta por:
-Código Ex: CD
-Períodos Ex: 1
-Curso/Semestre Ex: V1
