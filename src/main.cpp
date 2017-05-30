@@ -333,7 +333,7 @@ void generate_population(int group_size) {
             }
           }
         }
-    
+
         for(auto& room : backup){
           for(auto& course : professor_courses[professor]){
             if(course.compare(room.course)) continue;
@@ -704,6 +704,5 @@ int main(void){
     print_population(population);
   #endif
   evolve(MAX_GENERATIONS);
-  printf("Periodos: %d\n",total_period);
   return 0;
 }
