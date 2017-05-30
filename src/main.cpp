@@ -126,6 +126,7 @@ void read_room_schedules(){
   for(auto& room: rooms) courses[room.course].push_back(room);
 }
 
+int total_period = 0;
 // Função que realiza a leitura dos CCRs, períodos, cursos/semestres e
 // professores a partir do arquivo de entrada, ou seja, das associações
 // dos professores aos CCRs e suas respectivas fases.
@@ -136,6 +137,7 @@ void read_subjects() {
     int period_quantity;
     string code, course, professor;
     cin >> code >> period_quantity >> course >> professor;
+    total_period += period_quantity;
     subjects[course].push_back(subject_t({period_quantity,code,course,professor}));
     professor_courses[professor].push_back(course);
   }
@@ -288,6 +290,8 @@ void generate_population(int group_size) {
         #ifdef DEBUG
           cout << "Professor: " << professor << endl;
         #endif
+        int prev = -2;
+        vector<room_t> backup;
         for(auto& room : rooms){
           #ifdef DEBUG
             cout << "Sala: "; print_room(room);
@@ -306,6 +310,11 @@ void generate_population(int group_size) {
               #endif
               for(auto& available_schedule : room.available_schedules){
                 if(allocated_subject_schedules[subject] >= subject.period_quantity) break;
+                if(prev+1 == available_schedule) {
+                  backup.push_back(room);
+                  continue;
+                }
+                prev = available_schedule;
                 ii room_schedule(room.number, available_schedule);
                 if(allocated_room_schedules.find(room_schedule) != allocated_room_schedules.end()
                     || allocated_professor_schedules.find(available_schedule) != allocated_professor_schedules.end()) continue;
@@ -320,6 +329,27 @@ void generate_population(int group_size) {
                   cout << "Montado horário: ";
                   print_schedule(schedule);
                 #endif
+              }
+            }
+          }
+        }
+    
+        for(auto& room : backup){
+          for(auto& course : professor_courses[professor]){
+            if(course.compare(room.course)) continue;
+            for(auto& subject : subjects[course]){
+              if(professor.compare(subject.professor)) continue;
+              if (allocated_subject_schedules.find(subject) == allocated_subject_schedules.end())
+                allocated_subject_schedules[subject] = 0;
+              for(auto& available_schedule : room.available_schedules){
+                if(allocated_subject_schedules[subject] >= subject.period_quantity) break;
+                ii room_schedule(room.number, available_schedule);
+                if(allocated_room_schedules.find(room_schedule) != allocated_room_schedules.end()
+                    || allocated_professor_schedules.find(available_schedule) != allocated_professor_schedules.end()) continue;
+                allocated_room_schedules.insert(room_schedule);
+                allocated_professor_schedules.insert(available_schedule);
+                schedule_t schedule = schedule_t({room,subject,allocated_subject_schedules[subject]++,available_schedule});
+                person.schedules.push_back(schedule);
               }
             }
           }
@@ -340,7 +370,7 @@ void generate_population(int group_size) {
 // e quantidade de horários.
 bool available_schedules_comp(available_schedules &a,available_schedules &b) {
   if(a.schedule.subject.period_quantity != b.schedule.subject.period_quantity)
-    return a.schedule.subject.period_quantity < b.schedule.subject.period_quantity;
+    return a.schedule.subject.period_quantity > b.schedule.subject.period_quantity;
   return a.room_schedule.size() > b.room_schedule.size();
 }
 
@@ -674,5 +704,6 @@ int main(void){
     print_population(population);
   #endif
   evolve(MAX_GENERATIONS);
+  printf("Periodos: %d\n",total_period);
   return 0;
 }
