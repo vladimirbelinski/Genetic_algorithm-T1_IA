@@ -100,7 +100,8 @@ struct schedule_t_comp {
     diff = a.subject.course.compare(b.subject.course);
     if(diff) return diff < 0;
     diff = a.subject.code.compare(b.subject.code);
-    return diff < 0;
+    if(diff) return diff < 0;
+    return a.subject.period_quantity < b.subject.period_quantity;
   }
 };
 
@@ -112,6 +113,8 @@ struct subject_t_comp {
     if (diff) return diff < 0;
     diff = a.code.compare(b.code);
     if (diff) return diff < 0;
-    return a.period_quantity - b.period_quantity;
+    diff = a.professor.compare(b.professor);
+    if(diff) return diff < 0;
+    return a.period_quantity < b.period_quantity;
   }
 };
