@@ -25,10 +25,10 @@
 using namespace std;
 
 // PARÂMETROS CONSTANTES PARA O CÓDIGO GENÉTICO
-const int POPULATION_SIZE = 50; // TAMANHO DAS POPULAÇÕES
+const int POPULATION_SIZE = 80; // TAMANHO DAS POPULAÇÕES
 const int MUTATION_RATE = 20; // TAXA DE MUTAÇÃO ENTRE 0 E 100
-const int MAX_GENERATIONS = 1000; // NÚMERO MÁXIMO DE GERAÇÕES
-const int MAX_UNMODIFIED_GENERATIONS = 100; // NÚMERO MÁXIMO DE GERAÇÕES SEM ALTERAÇÃO DE FITNESS
+const int MAX_GENERATIONS = 100; // NÚMERO MÁXIMO DE GERAÇÕES
+const int MAX_UNMODIFIED_GENERATIONS = 50; // NÚMERO MÁXIMO DE GERAÇÕES SEM ALTERAÇÃO DE FITNESS
 
 // "Constantes" de tempo de execução.
 int max_person_fitness = -1, max_population_fitness = -1;
@@ -202,21 +202,26 @@ int count_restriction_infringements(const set<int> schedules){
 }
 
 // Função que calcula a fitness de um indivíduo.
-int fitness(const person_t person){
+int fitness(person_t &person){
   int fit = max_person_fitness;
   map<string, set<int> > professor_schedules = build_professor_schedules(person);
   for(auto& professor_schedule : professor_schedules){
     int schedules_to_avoid_infringements = count_schedules_to_avoid_infringements(professor_schedule.first, professor_schedule.second);
     fit -= schedules_to_avoid_infringements;
+    person.schedules_to_avoid_infringements += schedules_to_avoid_infringements;
 
     int morning_night_infringements = count_morning_night_infringements(professor_schedule.second);
     fit -= (morning_night_infringements * 6);
+    person.morning_night_infringements += morning_night_infringements;
 
     int consecutive_schedules_infringements = count_consecutive_schedules_infringements(professor_schedule.second);
     fit -= (consecutive_schedules_infringements + consecutive_schedules_infringements); // * 2
+    person.consecutive_schedules_infringements += consecutive_schedules_infringements;
 
     int restriction_infringements = count_restriction_infringements(professor_schedule.second);
     fit -= (restriction_infringements * 90);
+    person.restriction_infringements += restriction_infringements;
+
   }
   return fit;
 }
@@ -564,6 +569,7 @@ void evolve(int generations) {
       } else {
         child.fitness = fitness(child);
         if (child.fitness == max_person_fitness) {
+          cout << "Fitness máxima da última geração: " << population.people.back().fitness << endl;
           cout << "\nEncontrado indivíduo com fitness máxima:" << endl;
           print_person(child);
           cout << "Encerrando..." << endl;
@@ -575,18 +581,23 @@ void evolve(int generations) {
     }
     if (reached_max_person_fitness || max_permutations) break;
     set_population_fitness(new_population);
-    cout << "Fitness da " << g + 1 << "-ésima geração: " << population.fitness << " de " << max_population_fitness << endl;
+    // cout << "Fitness da " << g + 1 << "-ésima geração: " << population.fitness << " de " << max_population_fitness << endl;
     if (new_population.fitness == population.fitness) unmodified_generations++;
     else unmodified_generations = 0;
     if (unmodified_generations == MAX_UNMODIFIED_GENERATIONS) {
       reached_max_unmodified_generations = true;
       cout << "\nMáximo de " << MAX_UNMODIFIED_GENERATIONS << " gerações sem alteração de fitness alcançado." << endl;
+      cout << "Fitness máxima da última geração: " << population.people.back().fitness << endl;
       done_print(new_population);
       break;
     }
     population = new_population;
   }
-  if (!reached_max_person_fitness && !reached_max_unmodified_generations) done_print(population);
+
+  if (!reached_max_person_fitness && !reached_max_unmodified_generations){
+    cout << "Fitness máxima da última geração: " << population.people.back().fitness << endl;
+    done_print(population);
+  }
 }
 
 // Mensagem exibida ao término de execução.
@@ -629,7 +640,7 @@ void print_schedule(schedule_t schedule) {
 // Função que imprime informações referentes a um indivíduo.
 // Utilizada para debug.
 void print_person(person_t person){
-  cout << "Indivíduo com fitness " << person.fitness << " de " << max_person_fitness << " e horários:" << endl;
+  cout << "Indivíduo com fitness " << person.fitness << " de " << max_person_fitness << " (" << person.schedules_to_avoid_infringements + person.morning_night_infringements + person.consecutive_schedules_infringements << " preferências violadas, " << person.restriction_infringements << " restrições violadas) e horários:" << endl;
   for(auto& schedule : person.schedules){
     print_schedule(schedule);
   }
@@ -703,6 +714,7 @@ int main(void){
     cout << "População inicial:" << endl;
     print_population(population);
   #endif
+  cout << "Fitness máxima da geração inicial: " << population.people.back().fitness << endl;
   evolve(MAX_GENERATIONS);
   return 0;
 }

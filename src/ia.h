@@ -40,7 +40,7 @@ typedef struct Schedule {
 
 // Estrutura para armazenar e representar um indivíduo.
 typedef struct Person {
-  int fitness = 0;
+  int fitness = 0, schedules_to_avoid_infringements = 0, morning_night_infringements = 0, consecutive_schedules_infringements = 0, restriction_infringements = 0;
   vector<schedule_t> schedules;
 } person_t;
 
